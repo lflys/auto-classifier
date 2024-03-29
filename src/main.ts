@@ -117,12 +117,12 @@ export default class AutoClassifierPlugin extends Plugin {
 		// ------- [API Processing] -------
 		// Call API
 		const responseRaw = await ChatGPT.callAPI(system_role, user_prompt, this.settings.apiKey);
-		const jsonRegex = /reliability[\s\S]*?:\s*([\d.]+)[\s\S]*?output[\s\S]*?:\s*"([^"^}]+)/;
+		const jsonRegex = /reliability[\s\S]*?:\s*([\d.]+)[\s\S]*?output[\s\S]*?:\s*\[([^\]]+)\]/;
 		const match = responseRaw.match(jsonRegex);
 		let resOutput;
 		let resReliabity;
 		if (match && match.length > 1) {
-			resOutput = match[2];
+			resOutput = match[2].split(",").map(tag => tag.trim().replace(/"/g, ""));
 			resReliabity = parseFloat(match[1]);
 		} else {
 			new Notice(`⛔ ${this.manifest.name}: output format error (output: ${responseRaw})`);
