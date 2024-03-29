@@ -69,65 +69,59 @@ export class ViewManager {
         return tags;
     }
 
-    async insertAtFrontMatter(key: string, value: string, overwrite = false, prefix = '', suffix = ''): Promise<void> {
-        value = `${prefix}${value}${suffix}`;
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        
-        if (activeView) {
-            const file = activeView.file;
-            await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-                frontmatter = frontmatter || {};
-
-                if (frontmatter[key] && !overwrite) {
-                    // add value as list element if exist
-                    if (Array.isArray(frontmatter[key])) {
-                        frontmatter[key].push(value);
-                    } else {
-                        frontmatter[key] = [frontmatter[key], value];
-                    }
-                } else {
-                    // overwrite
-                    frontmatter[key] = value;
-                }
-            });
-        }
+    async insertAtFrontMatter(key: string, values: string, overwrite = false, prefix = '', suffix = ''): Promise<void> {
+	    values = values.map(value => `${prefix}${value}${suffix}`);
+	    const activeView = this.app.workspace.getActiveViewOfType(import_obsidian3.MarkdownView);
+	    if (activeView) {
+	      const file = activeView.file;
+	      await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+	        frontmatter = frontmatter || {};
+	        if (frontmatter[key] && !overwrite) {
+	          if (Array.isArray(frontmatter[key])) {
+	            frontmatter[key].push(...values);
+	          } else {
+	            frontmatter[key] = [frontmatter[key], ...values];
+	          }
+	        } else {
+	          frontmatter[key] = values;
+	        }
+	      });
+	    }
     }
 
-    async insertAtTitle(value: string, overwrite = false, prefix = '', suffix = ''): Promise<void> {
-        value = `${prefix}${value}${suffix}`;
-        const file = this.app.workspace.getActiveFile();
-        if (!file) return; 
-        let newName = file.basename;
-        if (overwrite) {
-            newName = `${value}`;
-        } else {
-            newName = `${newName} ${value}`;
-        }
-        newName = newName.replace(/[\"\/<>:\|?\"]/g, ''); // for window file name
-        // @ts-ignore
-        const newPath = file.getNewPathAfterRename(newName)
-        await this.app.fileManager.renameFile(file, newPath);
+    async insertAtTitle(values: string, overwrite = false, prefix = '', suffix = ''): Promise<void> {
+	    values = values.map(value => `${prefix}${value}${suffix}`).join(" ");
+	    const file = this.app.workspace.getActiveFile();
+	    if (!file)
+	      return;
+	    let newName = file.basename;
+	    if (overwrite) {
+	      newName = `${values}`;
+	    } else {
+	      newName = `${newName} ${values}`;
+	    }
+	    newName = newName.replace(/[\"\/<>:\|?\"]/g, "");
+	    const newPath = file.getNewPathAfterRename(newName);
+	    await this.app.fileManager.renameFile(file, newPath);
     }
 
-    async insertAtCursor(value: string, overwrite = false, outType: OutType, prefix = '', suffix = ''): Promise<void> {
-        const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        const output = this.preprocessOutput(value, outType, prefix, suffix);
-        
-        if (activeView) {
-            const editor = activeView.editor;
-            const selection = editor.getSelection();
-            if (selection && !overwrite) {
-                // replace selection
-                editor.setSelection(editor.getCursor('to'));
-            }
-            // overwrite
-            editor.replaceSelection(output);
-        }
+    async insertAtCursor(values: string, overwrite = false, outType: OutType, prefix = '', suffix = ''): Promise<void> {
+	    const activeView = this.app.workspace.getActiveViewOfType(import_obsidian3.MarkdownView);
+	    // const output = this.preprocessOutput(value, outType, prefix, suffix);
+	    const output = values.map(value => this.preprocessOutput(value, outType, prefix, suffix)).join(" ");  // 这里的连接符也需要可设置
+	    if (activeView) {
+	      const editor = activeView.editor;
+	      const selection = editor.getSelection();
+	      if (selection && !overwrite) {
+	        editor.setSelection(editor.getCursor("to"));
+	      }
+	      editor.replaceSelection(output);
+	    }
     }
 
     async insertAtContentTop(value: string, outType: OutType, prefix = '', suffix = ''): Promise<void> {
         const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
-        const output = this.preprocessOutput(value, outType, prefix, suffix);
+        const output = values.map(value => this.preprocessOutput(value, outType, prefix, suffix)).join(" ");
         
         if (activeView) {
             const editor = activeView.editor;
